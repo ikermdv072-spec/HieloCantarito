@@ -1,0 +1,251 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sistema Empresa de Hielo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">EH</div>
+        <div><strong>Empresa de Hielo</strong><span>Control automatizado</span></div>
+      </div>
+      <nav class="nav" aria-label="Secciones">
+        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="nav-btn" data-view="ventas">Ventas detalladas</button>
+        <button class="nav-btn" data-view="produccion">Producción diaria</button>
+        <button class="nav-btn" data-view="invHielo">Inventario hielo</button>
+        <button class="nav-btn" data-view="invBolsas">Inventario bolsas</button>
+        <button class="nav-btn" data-view="familia">La Familia</button>
+
+        <button class="nav-btn" data-view="gasolina">Gasolina</button>
+        <button class="nav-btn" data-view="gastos">Gastos</button>
+        <button class="nav-btn" data-view="costos">Costo producto</button>
+        <button class="nav-btn" data-view="reportes">Reportes</button>
+        <button class="nav-btn" data-view="config">Configuración</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="exportBtn" class="secondary full">Exportar respaldo</button>
+        <label class="secondary full file-label" for="importFile">Importar respaldo</label>
+        <input id="importFile" type="file" accept="application/json" hidden>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><p class="eyebrow" id="todayLabel"></p><h1 id="viewTitle">Dashboard</h1></div>
+        <div class="top-actions">
+          <input id="businessName" class="business-name" aria-label="Nombre de empresa">
+          <button id="demoBtn" class="ghost">Datos demo</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="filters panel slim-panel">
+          <label>Fecha de análisis<input type="date" id="analysisDate"></label>
+          <label>Mes de análisis<input type="month" id="analysisMonth"></label>
+          <button class="secondary" data-view-link="ventas">Nueva venta</button>
+        </div>
+        <div class="kpi-grid">
+          <article class="kpi"><span>Ventas día</span><strong id="dashSalesDay">Bs 0.00</strong></article>
+          <article class="kpi"><span>Cobrado día</span><strong id="dashPaidDay">Bs 0.00</strong></article>
+          <article class="kpi"><span>Ventas mes</span><strong id="dashSalesMonth">Bs 0.00</strong></article>
+          <article class="kpi"><span>Saldo La Familia</span><strong id="dashFamilyDebt">Bs 0.00</strong></article>
+        </div>
+        <div class="two-col">
+          <section class="panel"><div class="panel-head"><h2>Productos</h2></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock actual</th><th>Ventas mes</th><th>Costo completo</th><th>Ganancia neta</th></tr></thead><tbody id="dashProductRows"></tbody></table></div></section>
+          <section class="panel"><div class="panel-head"><h2>Insumos</h2></div><div class="table-wrap"><table><thead><tr><th>Insumo</th><th>Stock actual</th><th>Compras mes</th><th>Usadas/falladas</th><th>Obs.</th></tr></thead><tbody id="dashSupplyRows"></tbody></table></div></section>
+        </div>
+      </section>
+
+      <section id="ventas" class="view">
+        <div class="work-grid">
+          <form id="saleForm" class="panel form-panel">
+            <div class="panel-head"><h2>Registrar venta</h2></div>
+            <div class="form-grid">
+              <label>Fecha<input type="date" name="date" required></label>
+              <label>Cliente<select name="client"><option>Trinidad</option><option>La Familia</option><option>Mostrador</option><option>Otro</option></select></label>
+              <label>Nombre si es otro<input name="clientOther" placeholder="Opcional"></label>
+              <label>Producto<select name="product"><option>1 kg</option><option>3 kg</option><option>Barra</option></select></label>
+              <label>Cantidad<input type="number" min="1" step="1" name="qty" value="1" required></label>
+              <label>Precio unitario<input type="number" min="0" step="0.01" name="price" required></label>
+              <label>Método pago<select name="method"><option>Efectivo</option><option>QR</option><option>Crédito La Familia</option></select></label>
+              <label>Estado pago<select name="status"><option>Pagado</option><option>Pendiente</option></select></label>
+              <label>Bonificación 1kg<input type="number" min="0" step="1" name="bonus1kg" value="0"></label>
+              <label>Observaciones<input name="notes"></label>
+            </div>
+            <button class="primary" type="submit">Guardar venta</button>
+            <button type="button" class="secondary cancel-edit-btn" data-cancel-edit="saleForm" hidden>Cancelar edición</button>
+          </form>
+          <section class="panel"><div class="panel-head"><h2>Ventas detalladas</h2><input id="saleSearch" class="mini-input" placeholder="Buscar"></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Cant.</th><th>Total</th><th>Kg movidos</th><th>Costo directo</th><th>Cobrado</th><th>Crédito LF</th><th></th></tr></thead><tbody id="saleRows"></tbody></table></div></section>
+        </div>
+      </section>
+
+      <section id="produccion" class="view">
+        <div class="work-grid">
+          <form id="prodForm" class="panel form-panel">
+            <div class="panel-head"><h2>Producción diaria</h2></div>
+            <div class="form-grid">
+              <label>Fecha<input type="date" name="date" required></label>
+              <label>Cubitos kg producidos<input type="number" min="0" step="0.01" name="cubesKg" value="0"></label>
+              <label>Bolsas 1kg envasadas<input type="number" min="0" step="1" name="bags1" value="0"></label>
+              <label>Bolsas 3kg envasadas<input type="number" min="0" step="1" name="bags3" value="0"></label>
+              <label>Barras producidas<input type="number" min="0" step="1" name="bars" value="0"></label>
+              <label>Observaciones<input name="notes"></label>
+            </div>
+            <button class="primary" type="submit">Guardar producción</button>
+            <button type="button" class="secondary cancel-edit-btn" data-cancel-edit="prodForm" hidden>Cancelar edición</button>
+          </form>
+          <section class="panel"><div class="panel-head"><h2>Producción registrada</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Día</th><th>Trabajo ventas</th><th>Kg envasados</th><th>Dif. cubitos</th><th>Barras</th><th>Dif. barras</th><th></th></tr></thead><tbody id="prodRows"></tbody></table></div></section>
+        </div>
+      </section>
+
+      <section id="invHielo" class="view">
+        <div class="work-grid">
+          <form id="lossForm" class="panel form-panel">
+            <div class="panel-head"><h2>Registrar pérdida de hielo</h2></div>
+            <div class="form-grid">
+              <label>Fecha<input type="date" name="date" required></label>
+              <label>Perdido 1kg<input type="number" min="0" step="1" name="lost1" value="0"></label>
+              <label>Perdido 3kg<input type="number" min="0" step="1" name="lost3" value="0"></label>
+              <label>Perdido barras<input type="number" min="0" step="1" name="lostBars" value="0"></label>
+              <label>Observaciones<input name="notes"></label>
+            </div>
+            <button class="primary" type="submit">Guardar pérdida</button>
+          </form>
+          <section class="panel"><div class="panel-head"><h2>Inventario hielo</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Prod 1kg</th><th>Prod 3kg</th><th>Prod barras</th><th>Vend 1kg</th><th>Vend 3kg</th><th>Vend barras</th><th>Bonif</th><th>Perdido</th><th>Stock 1kg</th><th>Stock 3kg</th><th>Stock barras</th></tr></thead><tbody id="iceRows"></tbody></table></div></section>
+        </div>
+      </section>
+
+      <section id="invBolsas" class="view">
+        <div class="work-grid bags-forms-grid">
+          <form id="bagBuyForm" class="panel form-panel">
+            <div class="panel-head"><h2>Compra de bolsas</h2></div>
+            <div class="form-grid">
+              <label>Fecha<input type="date" name="date" required></label>
+              <label>&nbsp;</label>
+              <label>Cantidad bolsas 1 kg<input type="number" min="0" step="1" name="qty1" value="0"></label>
+              <label>Precio unitario 1 kg<input type="number" min="0" step="0.01" name="price1" value="0"></label>
+              <label>Cantidad bolsas 3 kg<input type="number" min="0" step="1" name="qty3" value="0"></label>
+              <label>Precio unitario 3 kg<input type="number" min="0" step="0.01" name="price3" value="0"></label>
+              <label>Cantidad bolsas negras<input type="number" min="0" step="1" name="qtyBlack" value="0"></label>
+              <label>Precio unitario negras<input type="number" min="0" step="0.01" name="priceBlack" value="0"></label>
+              <label>Observaciones<input name="notes"></label>
+            </div>
+            <button class="primary" type="submit">Guardar compra</button>
+          </form>
+          <form id="bagsForm" class="panel form-panel">
+            <div class="panel-head"><h2>Entrega y devolución diaria</h2><span class="badge">Producción</span></div>
+            <div class="form-grid">
+              <label>Fecha<input type="date" name="date" required></label>
+              <label>&nbsp;</label>
+              <label>Entregadas 1 kg (inicio día)<input type="number" min="0" step="1" name="del1" value="0"></label>
+              <label>Devueltas 1 kg (fin día)<input type="number" min="0" step="1" name="ret1" value="0"></label>
+              <label>Entregadas 3 kg (inicio día)<input type="number" min="0" step="1" name="del3" value="0"></label>
+              <label>Devueltas 3 kg (fin día)<input type="number" min="0" step="1" name="ret3" value="0"></label>
+              <label>Falladas 1 kg<input type="number" min="0" step="1" name="fail1" value="0"></label>
+              <label>Falladas 3 kg<input type="number" min="0" step="1" name="fail3" value="0"></label>
+              <label>Bolsas negras usadas hoy<input type="number" min="0" step="1" name="usedBlack" value="0"></label>
+              <label>Observaciones<input name="notes"></label>
+            </div>
+            <button class="primary" type="submit">Guardar entrega/devolución</button>
+          </form>
+        </div>
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head"><h2>Historial de bolsas</h2></div>
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Compras 1kg</th><th>Compras 3kg</th><th>Compras negras</th><th>Entregadas 1kg</th><th>Dev. 1kg</th><th>Entregadas 3kg</th><th>Dev. 3kg</th><th>Falladas</th><th>Negras usadas</th><th>Stock 1kg</th><th>Stock 3kg</th><th>Stock negras</th></tr></thead><tbody id="bagsRows"></tbody></table></div>
+        </section>
+      </section>
+
+      <section id="familia" class="view">
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,minmax(145px,1fr));margin-bottom:16px">
+          <article class="kpi"><span>Deuda total pendiente</span><strong id="famTotalDebt">Bs 0.00</strong></article>
+          <article class="kpi"><span>Ventas mes actual</span><strong id="famMonthSales">Bs 0.00</strong></article>
+          <article class="kpi"><span>Cobrado mes actual</span><strong id="famMonthPaid">Bs 0.00</strong></article>
+        </div>
+        <div class="work-grid">
+          <form id="paymentForm" class="panel form-panel">
+            <div class="panel-head"><h2>Registrar pago</h2></div>
+            <div class="form-grid">
+              <label>Fecha<input type="date" name="date" required></label>
+              <label>Mes pagado<input type="month" name="month" required></label>
+              <label>Monto<input type="number" min="0" step="0.01" name="amount" required></label>
+              <label>Método<select name="method"><option>Efectivo</option><option>QR</option></select></label>
+              <label>Observación<input name="notes"></label>
+              <input type="hidden" name="client" value="La Familia">
+            </div>
+            <button class="primary" type="submit">Guardar pago</button>
+            <button type="button" class="secondary cancel-edit-btn" data-cancel-edit="paymentForm" hidden>Cancelar edición</button>
+          </form>
+          <section class="panel">
+            <div class="panel-head"><h2>Deuda acumulada — mes actual</h2><span id="famCurrentMonth" class="badge"></span></div>
+            <div class="summary-list">
+              <div class="summary-item"><span>Bolsas 1 kg</span><strong id="famDebt1kg">Bs 0.00</strong></div>
+              <div class="summary-item"><span>Bolsas 3 kg</span><strong id="famDebt3kg">Bs 0.00</strong></div>
+              <div class="summary-item"><span>Barras</span><strong id="famDebtBar">Bs 0.00</strong></div>
+              <div class="summary-item"><span>Total vendido</span><strong id="famDebtTotal">Bs 0.00</strong></div>
+              <div class="summary-item"><span>Ya pagado</span><strong id="famDebtPaid">Bs 0.00</strong></div>
+              <div class="summary-item fam-balance-row"><span><strong>Saldo a pagar</strong></span><strong id="famDebtBalance">Bs 0.00</strong></div>
+            </div>
+          </section>
+        </div>
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head"><h2>Historial mensual</h2><span class="badge">Paga fin de mes</span></div>
+          <div class="table-wrap"><table><thead><tr><th>Mes</th><th>Venta 1kg</th><th>Venta 3kg</th><th>Venta barras</th><th>Total vendido</th><th>Pagado</th><th>Saldo pendiente</th><th>Estado</th></tr></thead><tbody id="familyRows"></tbody></table></div>
+        </section>
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head"><h2>Pagos recibidos</h2></div>
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Mes pagado</th><th>Monto</th><th>Método</th><th></th></tr></thead><tbody id="famPaymentRows"></tbody></table></div>
+        </section>
+      </section>
+
+      <section id="gasolina" class="view">
+        <div class="work-grid">
+          <form id="fuelForm" class="panel form-panel"><div class="panel-head"><h2>Gasolina</h2></div><div class="form-grid"><label>Fecha<input type="date" name="date" required></label><label>Litros comprados<input type="number" min="0" step="0.01" name="litersBought" value="0"></label><label>Precio/L compra<input type="number" min="0" step="0.01" name="buyPrice" value="0"></label><label>Litros usados<input type="number" min="0" step="0.01" name="litersUsed" value="0"></label><label>Precio/L uso<input type="number" min="0" step="0.01" name="usePrice" value="0"></label></div><button class="primary" type="submit">Guardar gasolina</button><button type="button" class="secondary cancel-edit-btn" data-cancel-edit="fuelForm" hidden>Cancelar edición</button></form>
+          <section class="panel"><div class="panel-head"><h2>Control gasolina</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>L comprados</th><th>Costo compra</th><th>L usados</th><th>Costo usado</th><th>Saldo litros</th><th></th></tr></thead><tbody id="fuelRows"></tbody></table></div></section>
+        </div>
+      </section>
+
+      <section id="gastos" class="view">
+        <div class="work-grid">
+          <form id="expenseForm" class="panel form-panel"><div class="panel-head"><h2>Gasto diario</h2></div><div class="form-grid"><label>Fecha<input type="date" name="date" required></label><label>Categoría<select name="category"><option>Sal</option><option>Filtros</option><option>Repuestos</option><option>Gasolina</option><option>Mantenimiento</option><option>Bolsas</option><option>Luz</option><option>Personal</option><option>Internet</option><option>Línea telefónica</option><option>Otros</option></select></label><label>Descripción<input name="description"></label><label>Monto<input type="number" min="0" step="0.01" name="amount" required></label><label>Método pago<select name="method"><option>Efectivo</option><option>QR</option><option>Transferencia</option></select></label><label>Observación<input name="notes"></label></div><button class="primary" type="submit">Guardar gasto</button><button type="button" class="secondary cancel-edit-btn" data-cancel-edit="expenseForm" hidden>Cancelar edición</button></form>
+          <form id="fixedForm" class="panel form-panel"><div class="panel-head"><h2>Gastos fijos del mes</h2></div><div class="form-grid"><label>Mes<input type="month" name="month" required></label><label>Luz<input type="number" min="0" step="0.01" name="luz" value="0"></label><label>Personal<input type="number" min="0" step="0.01" name="personal" value="0"></label><label>Internet<input type="number" min="0" step="0.01" name="internet" value="0"></label><label>Mantenimiento<input type="number" min="0" step="0.01" name="mantenimiento" value="0"></label><label>Línea telefónica<input type="number" min="0" step="0.01" name="telefono" value="0"></label><label>Otros<input type="number" min="0" step="0.01" name="otros" value="0"></label></div><button class="primary" type="submit">Guardar fijo</button><button type="button" class="secondary cancel-edit-btn" data-cancel-edit="fixedForm" hidden>Cancelar edición</button></form>
+        </div>
+        <div class="two-col lower"><section class="panel"><div class="panel-head"><h2>Gastos diarios</h2></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Monto</th><th></th></tr></thead><tbody id="expenseRows"></tbody></table></div></section><section class="panel"><div class="panel-head"><h2>Gastos fijos</h2></div><div class="table-wrap"><table><thead><tr><th>Mes</th><th>Luz</th><th>Personal</th><th>Internet</th><th>Total fijo</th><th></th></tr></thead><tbody id="fixedRows"></tbody></table></div></section></div>
+      </section>
+
+      <section id="costos" class="view">
+        <section class="panel"><div class="panel-head"><h2>Costo por bolsa de hielo y barra</h2><span id="costMonthLabel" class="badge"></span></div><div class="summary-list cost-summary"><div class="summary-item"><span>Total costos indirectos mes</span><strong id="indirectMonth">Bs 0.00</strong></div><div class="summary-item"><span>Costo indirecto por kg vendido</span><strong id="indirectKg">Bs 0.00</strong></div></div><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Precio venta</th><th>Costo bolsa empaque</th><th>Costo bolsa negra unit.</th><th>Costo directo unit.</th><th>Kg/unidad</th><th>Costo completo unit.</th><th>Ganancia bruta</th><th>Ganancia neta</th><th>Margen neto</th></tr></thead><tbody id="costRows"></tbody></table></div></section>
+      </section>
+
+      <section id="reportes" class="view">
+        <section class="panel"><div class="panel-head"><h2>Reportes automáticos</h2></div><div class="table-wrap"><table><thead><tr><th>Período</th><th>Ventas totales</th><th>Cobrado</th><th>Crédito La Familia</th><th>Costo directo</th><th>Gastos diarios</th><th>Gastos fijos</th><th>Gasolina usada</th><th>Ganancia bruta</th><th>Ganancia neta</th></tr></thead><tbody id="reportRows"></tbody></table></div></section>
+      </section>
+
+      <section id="config" class="view">
+        <section class="panel form-panel wide"><div class="panel-head"><h2>Configuración general</h2></div><div class="table-wrap"><table class="edit-table"><thead><tr><th>Producto</th><th>Precio venta</th><th>Costo bolsa empaque</th><th>Kg por unidad</th><th>Notas</th></tr></thead><tbody id="configProductRows"></tbody></table></div><div class="form-grid settings-grid"><label>Capacidad cubitos kg/día<input type="number" id="capCubes" min="0" step="0.01"></label><label>Barras por día<input type="number" id="capBars" min="0" step="1"></label><label>Kg por barra<input type="number" id="kgBar" min="0" step="0.01"></label><label>Costo bolsa negra<input type="number" id="blackBagCost" min="0" step="0.01"></label><label>Bolsas 1kg por bolsa negra<input type="number" id="blackBagUnit1" min="1" step="1"></label><label>Bolsas 3kg por bolsa negra<input type="number" id="blackBagUnit3" min="1" step="1"></label></div><button id="saveConfigBtn" class="primary">Guardar configuración</button></section>
+        <section class="panel form-panel wide" style="margin-top:16px">
+          <div class="panel-head"><h2>Conexión Supabase</h2><span class="badge">Nube</span></div>
+          <p class="sb-hint">Conecta con Supabase para guardar y restaurar tus datos en la nube. Crea una tabla llamada <code>sistema_hielo_backup</code> con columnas: <code>id int8 primary key</code>, <code>data jsonb</code>, <code>updated_at text</code>. Activa RLS y agrega una policy que permita todas las operaciones al rol <code>anon</code>.</p>
+          <div class="form-grid settings-grid">
+            <label>URL del proyecto<input id="sbUrl" type="url" placeholder="https://xxx.supabase.co"></label>
+            <label>Anon Key<input id="sbKey" type="text" placeholder="eyJ..."></label>
+          </div>
+          <div class="sb-actions">
+            <button id="saveSbBtn" class="secondary">Guardar credenciales</button>
+            <button id="pushSbBtn" class="primary">Subir datos a la nube ↑</button>
+            <button id="pullSbBtn" class="secondary">Descargar datos de la nube ↓</button>
+          </div>
+          <p id="sbStatus" class="sb-status"></p>
+        </section>
+      </section>
+    </main>
+  </div>
+  <template id="emptyTpl"><div class="empty">Sin datos todavía.</div></template>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
