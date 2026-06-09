@@ -33,7 +33,7 @@ function merge(base, incoming){
   }
   return out;
 }
-function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); }
+function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); autoSyncToSupabase(); }
 function monthStart(m){ return `${m}-01`; }
 function nextMonth(m){ const d = new Date(`${m}-01T00:00:00`); d.setMonth(d.getMonth()+1); return d.toISOString().slice(0,7); }
 function inDay(x, d){ return x.date === d; }
@@ -194,6 +194,34 @@ function renderReports(){ const d=document.getElementById("analysisDate").value|
 function renderConfig(){ document.getElementById("configProductRows").innerHTML = products.map(p=>`<tr><td>${p}</td><td><input data-cfg-product="${p}" data-cfg-field="price" type="number" step="0.01" value="${cfg(p).price}"></td><td><input data-cfg-product="${p}" data-cfg-field="packCost" type="number" step="0.01" value="${cfg(p).packCost}"></td><td><input data-cfg-product="${p}" data-cfg-field="kg" type="number" step="0.01" value="${cfg(p).kg}"></td><td><input data-cfg-product="${p}" data-cfg-field="notes" value="${cfg(p).notes}"></td></tr>`).join(""); ["capCubes","capBars","kgBar","blackBagCost","blackBagUnit1","blackBagUnit3"].forEach(id=>document.getElementById(id).value=state.config[id]); fillSbFields(); }
 function getSbCfg(){ return JSON.parse(localStorage.getItem("sbConfig")||"{}"); }
 function fillSbFields(){ const c=getSbCfg(); const u=document.getElementById("sbUrl"); const k=document.getElementById("sbKey"); if(u) u.value=c.url||""; if(k) k.value=c.key||""; }
+function sbSetStatus(msg, cls){ const el=document.getElementById("sbSyncBadge"); if(!el) return; el.textContent=msg; el.className="sb-sync-badge"+(cls?" "+cls:""); }
+let _sbTimer=null;
+function autoSyncToSupabase(){
+  const {url,key}=getSbCfg();
+  if(!url||!key) return;
+  if(_sbTimer) clearTimeout(_sbTimer);
+  sbSetStatus("Sincronizando...","syncing");
+  _sbTimer=setTimeout(async()=>{
+    if(typeof window.supabase==="undefined"){ sbSetStatus("",""); return; }
+    try{
+      const sb=window.supabase.createClient(url,key);
+      const {error}=await sb.from("sistema_hielo_backup").upsert({id:1,data:state,updated_at:new Date().toISOString()});
+      if(error) throw error;
+      sbSetStatus("Sincronizado ✓","synced");
+    }catch(e){ sbSetStatus("Error sync","sync-err"); }
+  },2000);
+}
+async function initSupabaseSync(){
+  const {url,key}=getSbCfg();
+  if(!url||!key||typeof window.supabase==="undefined") return;
+  try{
+    sbSetStatus("Cargando...","syncing");
+    const sb=window.supabase.createClient(url,key);
+    const {data,error}=await sb.from("sistema_hielo_backup").select("data,updated_at").eq("id",1).single();
+    if(!error&&data&&data.data){ state=merge(starter,data.data); render(); }
+    sbSetStatus("Sincronizado ✓","synced");
+  }catch(e){ sbSetStatus("",""); }
+}
 function addSubmit(id, collection, mapper){ document.getElementById(id).addEventListener("submit", e=>{ e.preventDefault(); const data=Object.fromEntries(new FormData(e.currentTarget)); const mode=editMode[id]; if(mode){ const idx=state[collection].findIndex(x=>x.id===mode.id); if(idx!==-1) state[collection][idx]={id:mode.id,...mapper(data)}; cancelEdit(id); } else { state[collection].push({id:uid(),...mapper(data)}); e.currentTarget.reset(); setDefaults(e.currentTarget); } render(); }); }
 addSubmit("saleForm","sales",d=>({date:d.date,client:d.client,clientOther:d.clientOther.trim(),product:d.product,qty:n(d.qty),price:n(d.price),method:d.method,status:d.status,bonus1kg:n(d.bonus1kg),notes:d.notes.trim()}));
 addSubmit("prodForm","productions",d=>({date:d.date,cubesKg:n(d.cubesKg),bags1:n(d.bags1),bags3:n(d.bags3),bars:n(d.bars),notes:d.notes.trim()}));
@@ -216,7 +244,8 @@ document.getElementById("exportBtn").addEventListener("click",()=>{ const blob=n
 document.getElementById("importFile").addEventListener("change",async e=>{ const file=e.target.files[0]; if(!file)return; state=merge(starter,JSON.parse(await file.text())); render(); });
 document.getElementById("demoBtn").addEventListener("click",()=>{ if(!confirm("¿Cargar datos demo? Se reemplazarán los datos actuales."))return; state=demo(); render(); });
 function demo(){ const s=structuredClone(starter); s.sales=[{id:uid(),date:today,client:"Trinidad",clientOther:"",product:"3 kg",qty:10,price:9,method:"Efectivo",status:"Pagado",bonus1kg:0,notes:""},{id:uid(),date:today,client:"La Familia",clientOther:"",product:"1 kg",qty:20,price:3,method:"Crédito La Familia",status:"Pendiente",bonus1kg:2,notes:"Promo 10+1"},{id:uid(),date:today,client:"La Familia",clientOther:"",product:"Barra",qty:3,price:11,method:"Crédito La Familia",status:"Pendiente",bonus1kg:0,notes:""}]; s.productions=[{id:uid(),date:today,cubesKg:70,bags1:55,bags3:18,bars:24,notes:"Turno mañana"}]; s.bagPurchases=[{id:uid(),date:today,qty1:500,price1:0.30,qty3:300,price3:0.48,qtyBlack:80,priceBlack:0.40,notes:"Compra inicial"}]; s.bagMoves=[{id:uid(),date:today,del1:55,ret1:0,del3:18,ret3:0,fail1:2,fail3:1,usedBlack:9,notes:"Entrega turno mañana"}]; s.expenses=[{id:uid(),date:today,category:"Mantenimiento",description:"Revisión máquina",amount:120,method:"Efectivo",notes:""}]; s.fixedExpenses=[{id:uid(),month:monthNow,luz:900,personal:3200,internet:180,mantenimiento:150,telefono:80,otros:0}]; s.fuels=[{id:uid(),date:today,litersBought:30,buyPrice:3.74,litersUsed:8,usePrice:3.74}]; return s; }
-document.getElementById("saveSbBtn").addEventListener("click",()=>{ const st=document.getElementById("sbStatus"); localStorage.setItem("sbConfig",JSON.stringify({url:document.getElementById("sbUrl").value.trim(),key:document.getElementById("sbKey").value.trim()})); st.textContent="Credenciales guardadas localmente."; st.className="sb-status good-msg"; });
+document.getElementById("saveSbBtn").addEventListener("click",()=>{ const st=document.getElementById("sbStatus"); localStorage.setItem("sbConfig",JSON.stringify({url:document.getElementById("sbUrl").value.trim(),key:document.getElementById("sbKey").value.trim()})); st.textContent="Credenciales guardadas. Reinicia la app para activar la sincronización automática."; st.className="sb-status good-msg"; });
 document.getElementById("pushSbBtn").addEventListener("click",async()=>{ const {url,key}=getSbCfg(); const st=document.getElementById("sbStatus"); if(!url||!key){ st.textContent="Guarda primero las credenciales."; return; } if(typeof window.supabase==="undefined"){ st.textContent="Librería Supabase no disponible. Verifica tu conexión a internet."; return; } try{ st.textContent="Subiendo datos..."; st.className="sb-status"; const sb=window.supabase.createClient(url,key); const {error}=await sb.from("sistema_hielo_backup").upsert({id:1,data:state,updated_at:new Date().toISOString()}); if(error) throw error; st.textContent="Datos subidos correctamente ✓"; st.className="sb-status good-msg"; }catch(e){ st.textContent="Error: "+e.message; st.className="sb-status"; } });
 document.getElementById("pullSbBtn").addEventListener("click",async()=>{ const {url,key}=getSbCfg(); const st=document.getElementById("sbStatus"); if(!url||!key){ st.textContent="Guarda primero las credenciales."; return; } if(typeof window.supabase==="undefined"){ st.textContent="Librería Supabase no disponible."; return; } if(!confirm("¿Reemplazar datos locales con los datos guardados en Supabase?")) return; try{ st.textContent="Descargando datos..."; st.className="sb-status"; const sb=window.supabase.createClient(url,key); const {data,error}=await sb.from("sistema_hielo_backup").select("data").eq("id",1).single(); if(error) throw error; state=merge(starter,data.data); render(); st.textContent="Datos descargados correctamente ✓"; st.className="sb-status good-msg"; }catch(e){ st.textContent="Error: "+e.message; st.className="sb-status"; } });
 render();
+initSupabaseSync();
