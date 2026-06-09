@@ -229,6 +229,19 @@
       <section id="config" class="view">
         <section class="panel form-panel wide"><div class="panel-head"><h2>Configuración general</h2></div><div class="table-wrap"><table class="edit-table"><thead><tr><th>Producto</th><th>Precio venta</th><th>Costo bolsa empaque</th><th>Kg por unidad</th><th>Notas</th></tr></thead><tbody id="configProductRows"></tbody></table></div><div class="form-grid settings-grid"><label>Capacidad cubitos kg/día<input type="number" id="capCubes" min="0" step="0.01"></label><label>Barras por día<input type="number" id="capBars" min="0" step="1"></label><label>Kg por barra<input type="number" id="kgBar" min="0" step="0.01"></label><label>Costo bolsa negra<input type="number" id="blackBagCost" min="0" step="0.01"></label><label>Bolsas 1kg por bolsa negra<input type="number" id="blackBagUnit1" min="1" step="1"></label><label>Bolsas 3kg por bolsa negra<input type="number" id="blackBagUnit3" min="1" step="1"></label></div><button id="saveConfigBtn" class="primary">Guardar configuración</button></section>
         <section class="panel form-panel wide" style="margin-top:16px">
+          <div class="panel-head"><h2>Stock inicial</h2><span class="badge good">No afecta gastos</span></div>
+          <p class="sb-hint">Ingresa las existencias que ya tenías antes de empezar a usar el sistema. Se suman al inventario sin registrarse como compra ni gasto.</p>
+          <div class="form-grid settings-grid">
+            <label>Bolsas 1 kg<input type="number" id="siB1" min="0" step="1" value="0"></label>
+            <label>Bolsas 3 kg<input type="number" id="siB3" min="0" step="1" value="0"></label>
+            <label>Bolsas negras<input type="number" id="siBlack" min="0" step="1" value="0"></label>
+            <label>Hielo 1 kg (unidades)<input type="number" id="siIce1" min="0" step="1" value="0"></label>
+            <label>Hielo 3 kg (unidades)<input type="number" id="siIce3" min="0" step="1" value="0"></label>
+            <label>Barras de hielo<input type="number" id="siBar" min="0" step="1" value="0"></label>
+          </div>
+          <button id="saveStockInicialBtn" class="primary" style="margin-top:12px">Guardar stock inicial</button>
+        </section>
+        <section class="panel form-panel wide" style="margin-top:16px">
           <div class="panel-head"><h2>Conexión Supabase</h2><span class="badge">Nube</span></div>
           <p class="sb-hint">Conecta con Supabase para guardar y restaurar tus datos en la nube. Crea una tabla llamada <code>sistema_hielo_backup</code> con columnas: <code>id int8 primary key</code>, <code>data jsonb</code>, <code>updated_at text</code>. Activa RLS y agrega una policy que permita todas las operaciones al rol <code>anon</code>.</p>
           <div class="form-grid settings-grid">
